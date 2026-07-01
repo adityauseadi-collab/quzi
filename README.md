@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # QuizMaster Pro
 
 A production-ready Online Quiz Management System built with Python Flask.
@@ -133,3 +134,6 @@ FLASK_ENV=development
 | 60-69%  | C     |
 | 50-59%  | D     |
 | < 50%   | F     |
+=======
+# quzi
+>>>>>>> e69f6c4c0749b3a51d93e63a46c3162abab16347
