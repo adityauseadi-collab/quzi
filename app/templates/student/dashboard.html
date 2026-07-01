@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+{% block title %}Student Dashboard - QuizMaster Pro{% endblock %}
+{% block page_title %}My Dashboard{% endblock %}
+{% block content %}
+
+<!-- Stat Cards -->
+<div class="row g-4 mb-4">
+  <div class="col-6 col-md-3 animate-in">
+    <div class="stat-card primary">
+      <div class="stat-icon primary"><i class="bi bi-journal-check"></i></div>
+      <div class="stat-value">{{ my_results|length }}</div>
+      <div class="stat-label">Quizzes Taken</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 animate-in">
+    <div class="stat-card success">
+      <div class="stat-icon success"><i class="bi bi-percent"></i></div>
+      <div class="stat-value">{{ avg_score }}%</div>
+      <div class="stat-label">Average Score</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 animate-in">
+    <div class="stat-card warning">
+      <div class="stat-icon warning"><i class="bi bi-journal-text"></i></div>
+      <div class="stat-value">{{ available_quizzes|length }}</div>
+      <div class="stat-label">Available Quizzes</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 animate-in">
+    <div class="stat-card info">
+      <div class="stat-icon info"><i class="bi bi-trophy"></i></div>
+      <div class="stat-value">{{ my_results|selectattr('grade','equalto','A+')|list|length }}</div>
+      <div class="stat-label">A+ Grades</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <!-- Progress Chart -->
+  {% if chart_scores %}
+  <div class="col-lg-5 animate-in">
+    <div class="glass-card h-100">
+      <div class="card-header"><i class="bi bi-graph-up me-2"></i>My Progress</div>
+      <div class="card-body">
+        <div class="chart-container" style="height:220px">
+          <canvas id="progressChart"></canvas>
+        </div>
+        {% if my_results %}
+        <div class="row g-2 mt-3 text-center">
+          <div class="col-4">
+            <div class="fw-700 text-success">{{ my_results|map(attribute='percentage')|max|round(1) }}%</div>
+            <div class="text-muted" style="font-size:0.72rem">Best Score</div>
+          </div>
+          <div class="col-4">
+            <div class="fw-700 text-primary">{{ avg_score }}%</div>
+            <div class="text-muted" style="font-size:0.72rem">Average</div>
+          </div>
+          <div class="col-4">
+            <div class="fw-700 text-warning">{{ my_results|map(attribute='percentage')|min|round(1) }}%</div>
+            <div class="text-muted" style="font-size:0.72rem">Lowest</div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Grade Distribution -->
+  {% if my_results %}
+  <div class="col-lg-{{ '3' if chart_scores else '4' }} animate-in">
+    <div class="glass-card h-100">
+      <div class="card-header"><i class="bi bi-award me-2"></i>Grade Distribution</div>
+      <div class="card-body d-flex flex-column justify-content-center">
+        <canvas id="gradeChart" style="max-height:200px"></canvas>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Quick Links -->
+  <div class="col-lg-{{ '4' if chart_scores else '12' }} animate-in">
+    <div class="glass-card h-100">
+      <div class="card-header"><i class="bi bi-lightning me-2"></i>Quick Actions</div>
+      <div class="card-body d-flex flex-column gap-3">
+        <a href="{{ url_for('student.leaderboard') }}" class="btn btn-outline-primary w-100 text-start">
+          <i class="bi bi-trophy me-2"></i>View Leaderboard
+        </a>
+        <a href="{{ url_for('student.history') }}" class="btn btn-outline-primary w-100 text-start">
+          <i class="bi bi-clock-history me-2"></i>All My Results
+        </a>
+        {% if my_results %}
+        <a href="{{ url_for('student.download_result_pdf', result_id=my_results[0].id) }}"
+           class="btn btn-outline-success w-100 text-start">
+          <i class="bi bi-download me-2"></i>Latest Result PDF
+        </a>
+        {% endif %}
+        {% if available_quizzes %}
+        <a href="{{ url_for('student.start_quiz', quiz_id=available_quizzes[0].id) }}"
+           class="btn btn-primary w-100 text-start">
+          <i class="bi bi-play-fill me-2"></i>Start Next Quiz
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Available Quizzes -->
+<div class="glass-card mb-4 animate-in">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span><i class="bi bi-play-circle me-2"></i>Available Quizzes</span>
+    <!-- Category Filter -->
+    <div class="d-flex gap-2 align-items-center">
+      <select id="categoryFilter" class="form-select form-select-sm" style="width:auto">
+        <option value="">All Categories</option>
+      </select>
+      <input type="text" id="quizSearch" class="form-control form-control-sm"
+             placeholder="Search quizzes..." style="width:180px">
+    </div>
+  </div>
+  <div class="card-body">
+    {% if available_quizzes %}
+    <div class="row g-3" id="quizGrid">
+      {% for quiz in available_quizzes %}
+      <div class="col-md-6 col-xl-4 quiz-card-wrap"
+           data-category="{{ quiz.category.name }}"
+           data-title="{{ quiz.title|lower }}">
+        <div class="quiz-card">
+          <div class="quiz-category" style="color:{{ quiz.category.color }}">
+            <span class="badge" style="background:{{ quiz.category.color }}20;color:{{ quiz.category.color }}">
+              {{ quiz.category.name }}
+            </span>
+          </div>
+          <div class="quiz-title mt-2">{{ quiz.title }}</div>
+          {% if quiz.description %}
+          <p class="text-muted small mb-2">{{ quiz.description|truncate(60) }}</p>
+          {% endif %}
+          <div class="quiz-meta">
+            <span><i class="bi bi-question-circle"></i>{{ quiz.num_questions }} Qs</span>
+            <span><i class="bi bi-clock"></i>{{ quiz.time_limit }} min</span>
+            <span><i class="bi bi-people"></i>{{ quiz.get_attempt_count() }}</span>
+            <span><i class="bi bi-check-circle"></i>Pass: {{ quiz.pass_percentage|int }}%</span>
+          </div>
+          {% if quiz.id in taken_quiz_ids %}
+          <!--<div class="d-flex gap-2">
+            <a href="{{ url_for('student.start_quiz', quiz_id=quiz.id) }}"
+               class="btn btn-outline-primary btn-sm flex-1">
+              <i class="bi bi-arrow-repeat me-1"></i>Retake
+            </a>
+          </div>-->
+          {% else %}
+          <a href="{{ url_for('student.start_quiz', quiz_id=quiz.id) }}"
+             class="btn btn-primary btn-sm w-100">
+            <i class="bi bi-play-fill me-1"></i>Start Quiz
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div id="noResults" class="text-center py-4 text-muted d-none">
+      <i class="bi bi-search fs-3 d-block mb-2"></i>No quizzes match your search.
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-journal-x fs-1 d-block mb-3" style="opacity:0.3"></i>
+      <h5 class="fw-600">No quizzes available yet</h5>
+      <p class="small">Check back soon — your instructor will publish quizzes shortly.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Recent Results Table -->
+{% if my_results %}
+<div class="glass-card animate-in">
+  <div class="card-header d-flex justify-content-between">
+    <span><i class="bi bi-clock-history me-2"></i>Recent Results</span>
+    <a href="{{ url_for('student.history') }}" class="btn btn-outline-primary btn-sm">View All</a>
+  </div>
+  <div class="card-body p-0">
+    <table class="table-glass w-100">
+      <thead><tr>
+        <th>Quiz</th><th>Score</th><th>Grade</th><th>Correct</th><th>Date</th><th></th>
+      </tr></thead>
+      <tbody>
+        {% for r in my_results[:5] %}
+        <tr>
+          <td class="fw-500">{{ r.quiz.title|truncate(28) }}</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="progress" style="min-width:70px;height:6px">
+                <div class="progress-bar {{ r.percentage|pct_bar }}" style="width:{{ r.percentage }}%"></div>
+              </div>
+              <span class="fw-700 small {% if r.percentage>=70 %}text-success{% elif r.percentage>=50 %}text-warning{% else %}text-danger{% endif %}">
+                {{ r.percentage|round(1) }}%
+              </span>
+            </div>
+          </td>
+          <td><span class="badge badge-grade grade-{{ r.grade }}">{{ r.grade }}</span></td>
+          <td class="small text-muted">{{ r.correct_answers }}/{{ r.total_questions }}</td>
+          <td class="small text-muted">{{ r.submitted_at|time_ago }}</td>
+          <td>
+            <a href="{{ url_for('student.result', result_id=r.id) }}" class="btn btn-icon" title="View Result">
+              <i class="bi bi-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const isDark    = document.documentElement.getAttribute('data-theme') === 'dark';
+const textColor = isDark ? '#94a3b8' : '#64748b';
+
+{% if chart_scores %}
+// Progress Line Chart
+new Chart(document.getElementById('progressChart'), {
+  type: 'line',
+  data: {
+    labels: {{ chart_labels | tojson }},
+    datasets: [{
+      label: 'Score %', data: {{ chart_scores | tojson }},
+      borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.15)',
+      tension: 0.4, fill: true, pointBackgroundColor: '#6366f1', pointRadius: 5,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: textColor, maxRotation: 30 }, grid: { display: false } },
+      y: { min: 0, max: 100, ticks: { color: textColor }, grid: { color: 'rgba(99,102,241,0.1)' } }
+    }
+  }
+});
+{% endif %}
+
+{% if my_results %}
+// Grade Distribution Doughnut
+const grades = {{ my_results|map(attribute='grade')|list|tojson }};
+const gradeCounts = {};
+grades.forEach(g => { gradeCounts[g] = (gradeCounts[g]||0) + 1; });
+const gradeColors = { 'A+':'#22c55e','A':'#16a34a','B':'#3b82f6','C':'#f59e0b','D':'#f97316','F':'#ef4444' };
+const gradeOrder  = ['A+','A','B','C','D','F'];
+const filteredGrades = gradeOrder.filter(g => gradeCounts[g]);
+new Chart(document.getElementById('gradeChart'), {
+  type: 'doughnut',
+  data: {
+    labels: filteredGrades,
+    datasets: [{ data: filteredGrades.map(g => gradeCounts[g]),
+      backgroundColor: filteredGrades.map(g => gradeColors[g]),
+      borderWidth: 2, borderColor: isDark ? '#1e293b' : '#fff' }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { color: textColor, boxWidth: 10, padding: 8 } } }
+  }
+});
+{% endif %}
+
+// ── Category filter + live search ────────────────────────────────────────────
+async function loadCategories() {
+  try {
+    const res  = await fetch('/api/categories');
+    const cats = await res.json();
+    const sel  = document.getElementById('categoryFilter');
+    cats.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.name; opt.textContent = `${c.name} (${c.count})`;
+      sel.appendChild(opt);
+    });
+  } catch(e) {}
+}
+loadCategories();
+
+function filterQuizzes() {
+  const cat    = document.getElementById('categoryFilter').value.toLowerCase();
+  const search = document.getElementById('quizSearch').value.toLowerCase();
+  const cards  = document.querySelectorAll('.quiz-card-wrap');
+  let visible  = 0;
+
+  cards.forEach(card => {
+    const matchCat  = !cat    || card.dataset.category.toLowerCase() === cat;
+    const matchText = !search || card.dataset.title.includes(search);
+    card.style.display = (matchCat && matchText) ? '' : 'none';
+    if (matchCat && matchText) visible++;
+  });
+
+  document.getElementById('noResults')?.classList.toggle('d-none', visible > 0);
+}
+
+document.getElementById('categoryFilter')?.addEventListener('change', filterQuizzes);
+document.getElementById('quizSearch')?.addEventListener('input', filterQuizzes);
+</script>
+{% endblock %}

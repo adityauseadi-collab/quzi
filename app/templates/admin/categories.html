@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Categories - QuizMaster Pro{% endblock %}
+{% block page_title %}Categories{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <!-- Add Category -->
+  <div class="col-lg-4 animate-in">
+    <div class="glass-card">
+      <div class="card-header"><i class="bi bi-plus-circle me-2"></i>Add Category</div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('admin.add_category') }}" novalidate>
+          {{ form.hidden_tag() }}
+          <div class="mb-3">
+            {{ form.name.label(class="form-label") }}
+            {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), placeholder="Category name") }}
+            {% for e in form.name.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="mb-3">
+            {{ form.description.label(class="form-label") }}
+            {{ form.description(class="form-control", rows=2, placeholder="Optional description") }}
+          </div>
+          <div class="mb-4">
+            {{ form.color.label(class="form-label") }}
+            <input type="color" name="color" id="color" class="form-control form-control-color" value="#6366f1" style="height:42px">
+          </div>
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-plus-lg me-2"></i>Add Category
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Categories List -->
+  <div class="col-lg-8 animate-in">
+    <div class="glass-card">
+      <div class="card-header"><i class="bi bi-tags me-2"></i>All Categories ({{ categories|length }})</div>
+      <div class="card-body p-0">
+        <table class="table-glass w-100">
+          <thead><tr><th>Name</th><th>Questions</th><th>Description</th><th>Actions</th></tr></thead>
+          <tbody>
+            {% for cat in categories %}
+            <tr>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div style="width:14px;height:14px;border-radius:4px;background:{{ cat.color }};flex-shrink:0"></div>
+                  <span class="fw-600">{{ cat.name }}</span>
+                </div>
+              </td>
+              <td><span class="badge bg-primary">{{ cat.get_question_count() }}</span></td>
+              <td class="text-muted small">{{ cat.description|truncate(50) if cat.description else '—' }}</td>
+              <td>
+                <form method="POST" action="{{ url_for('admin.delete_category', cat_id=cat.id) }}" class="d-inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-icon text-danger"
+                    data-confirm="Delete category '{{ cat.name }}'? This will fail if questions exist.">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-4">No categories yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

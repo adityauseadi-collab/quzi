@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}QuizMaster Pro{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/password_strength.css') }}"/>
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+{% if current_user.is_authenticated %}
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <i class="bi bi-lightning-charge-fill text-warning"></i>
+    <span>QuizMaster <strong>Pro</strong></span>
+  </div>
+  <nav class="sidebar-nav">
+    {% if current_user.is_admin %}
+    <div class="nav-section-label">Admin</div>
+    <a href="{{ url_for('admin.dashboard') }}" class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>
+    <a href="{{ url_for('admin.questions') }}" class="nav-link {% if 'question' in (request.endpoint or '') %}active{% endif %}"><i class="bi bi-question-circle"></i><span>Questions</span></a>
+    <a href="{{ url_for('admin.quizzes') }}" class="nav-link {% if request.endpoint in ['admin.quizzes','admin.create_quiz'] %}active{% endif %}"><i class="bi bi-journal-check"></i><span>Quizzes</span></a>
+    <a href="{{ url_for('admin.categories') }}" class="nav-link {% if 'categor' in (request.endpoint or '') %}active{% endif %}"><i class="bi bi-tags"></i><span>Categories</span></a>
+    <a href="{{ url_for('admin.import_questions') }}" class="nav-link {% if 'import' in (request.endpoint or '') %}active{% endif %}"><i class="bi bi-upload"></i><span>Import</span></a>
+    <a href="{{ url_for('admin.students') }}" class="nav-link {% if request.endpoint == 'admin.students' %}active{% endif %}"><i class="bi bi-people"></i><span>Students</span></a>
+    <a href="{{ url_for('admin.all_results') }}" class="nav-link {% if request.endpoint in ['admin.all_results','admin.view_result'] %}active{% endif %}"><i class="bi bi-clipboard-data"></i><span>All Results</span></a>
+    <a href="{{ url_for('admin.analytics') }}" class="nav-link {% if request.endpoint == 'admin.analytics' %}active{% endif %}"><i class="bi bi-bar-chart-line"></i><span>Analytics</span></a>
+    {% else %}
+    <div class="nav-section-label">Student</div>
+    <a href="{{ url_for('student.dashboard') }}" class="nav-link {% if request.endpoint == 'student.dashboard' %}active{% endif %}"><i class="bi bi-house"></i><span>Dashboard</span></a>
+    <a href="{{ url_for('student.history') }}" class="nav-link {% if request.endpoint == 'student.history' %}active{% endif %}"><i class="bi bi-clock-history"></i><span>My Results</span></a>
+    <a href="{{ url_for('student.leaderboard') }}" class="nav-link {% if request.endpoint == 'student.leaderboard' %}active{% endif %}"><i class="bi bi-trophy"></i><span>Leaderboard</span></a>
+    {% endif %}
+    <div class="nav-section-label mt-3">Account</div>
+    <a href="{{ url_for('auth.profile') }}" class="nav-link {% if request.endpoint == 'auth.profile' %}active{% endif %}"><i class="bi bi-person-circle"></i><span>Profile</span></a>
+    <a href="{{ url_for('auth.logout') }}" class="nav-link text-danger"><i class="bi bi-box-arrow-right"></i><span>Logout</span></a>
+  </nav>
+</div>
+<div class="main-content" id="mainContent">
+  <div class="topbar">
+    <!-- <button class="btn btn-icon" id="sidebarToggle"><i class="bi bi-list fs-5"></i></button> -->
+    <div class="topbar-title">{% block page_title %}{% endblock %}</div>
+    <div class="topbar-right">
+      <button class="btn btn-icon" id="darkModeToggle"><i class="bi bi-moon-fill" id="darkModeIcon"></i></button>
+      <!-- Notification Bell -->
+      <div class="position-relative" id="notifBellWrap">
+        <button class="btn btn-icon" id="notifBell" title="Notifications">
+          <i class="bi bi-bell"></i>
+          <span class="notif-badge d-none" id="notifCount">0</span>
+        </button>
+        <div class="notif-dropdown glass-card d-none" id="notifDropdown">
+          <div class="notif-header d-flex justify-content-between align-items-center px-3 py-2">
+            <span class="fw-700 small">Notifications</span>
+            <button class="btn btn-link btn-sm p-0 text-muted small" id="markAllRead">Mark all read</button>
+          </div>
+          <div id="notifList" style="max-height:320px;overflow-y:auto"></div>
+          <div class="text-center py-2 border-top" style="border-color:var(--border)!important">
+            <span class="text-muted small">Showing latest 10</span>
+          </div>
+        </div>
+      </div>
+      <div class="user-badge">
+        <div class="user-avatar">{{ current_user.full_name[0].upper() if current_user.full_name else current_user.username[0].upper() }}</div>
+        <span class="d-none d-md-inline">{{ current_user.full_name or current_user.username }}</span>
+      </div>
+    </div>
+  </div>
+  <div class="page-content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}{% for category, message in messages %}
+      <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show glass-alert" role="alert">
+        <i class="bi bi-{% if category == 'success' %}check-circle{% elif category in ['danger','error'] %}exclamation-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+        {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+      {% endfor %}{% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+</div>
+{% else %}
+<div class="public-layout">
+  <nav class="navbar-public">
+    <a href="{{ url_for('main.index') }}" class="brand-logo"><i class="bi bi-lightning-charge-fill text-warning"></i> QuizMaster <strong>Pro</strong></a>
+    <div class="navbar-actions">
+      <button class="btn btn-icon" id="darkModeToggle"><i class="bi bi-moon-fill" id="darkModeIcon"></i></button>
+      <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-sm">Login</a>
+      <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">Register</a>
+    </div>
+  </nav>
+  <div class="public-content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}<div class="container">{% for category, message in messages %}
+      <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show mt-3" role="alert">
+        {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>{% endfor %}</div>{% endif %}
+    {% endwith %}
+    {% block public_content %}{% endblock %}
+  </div>
+</div>
+{% endif %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/password_strength.js') }}"></script>
+<script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}500 – Server Error | QuizMaster Pro{% endblock %}
+{% block page_title %}Server Error{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-center" style="min-height:60vh">
+  <div class="text-center animate-in">
+    <div style="font-size:5rem;line-height:1;margin-bottom:1rem">⚙️</div>
+    <h1 style="font-size:5rem;font-weight:900;background:linear-gradient(135deg,#f59e0b,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">500</h1>
+    <h3 class="fw-700 mb-3">Something Went Wrong</h3>
+    <p class="text-muted mb-4" style="max-width:420px;margin:0 auto">
+      An unexpected error occurred on our end. Our team has been notified.
+      Please try again in a few moments.
+    </p>
+    <div class="d-flex gap-3 justify-content-center">
+      <a href="javascript:location.reload()" class="btn btn-outline-primary"><i class="bi bi-arrow-clockwise me-2"></i>Try Again</a>
+      {% if current_user.is_authenticated %}
+      <a href="{{ url_for('admin.dashboard') if current_user.is_admin else url_for('student.dashboard') }}" class="btn btn-primary"><i class="bi bi-house me-2"></i>Dashboard</a>
+      {% else %}
+      <a href="{{ url_for('main.index') }}" class="btn btn-primary"><i class="bi bi-house me-2"></i>Home</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block public_content %}
+<div class="d-flex align-items-center justify-content-center" style="min-height:70vh">
+  <div class="text-center animate-in">
+    <div style="font-size:5rem;line-height:1;margin-bottom:1rem">⚙️</div>
+    <h1 style="font-size:5rem;font-weight:900;background:linear-gradient(135deg,#f59e0b,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">500</h1>
+    <h3 class="fw-700 mb-3">Something Went Wrong</h3>
+    <p class="text-muted mb-4">An unexpected error occurred. Please try again.</p>
+    <a href="{{ url_for('main.index') }}" class="btn btn-primary"><i class="bi bi-house me-2"></i>Home</a>
+  </div>
+</div>
+{% endblock %}

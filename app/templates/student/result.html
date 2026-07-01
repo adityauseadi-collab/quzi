@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Result - {{ result.quiz.title }}{% endblock %}
+{% block page_title %}Quiz Result{% endblock %}
+{% block content %}
+
+<div class="row g-4">
+  <!-- Score Hero -->
+  <div class="col-lg-4 animate-in">
+    <div class="glass-card">
+      <div class="card-body result-hero">
+        <div class="score-circle" style="--pct: {{ result.percentage }}%">
+          <div class="score-pct">{{ result.percentage|round(1) }}%</div>
+          <div class="score-label">Score</div>
+        </div>
+        <span class="badge badge-grade grade-{{ result.grade }} fs-4">{{ result.grade }}</span>
+        <p class="mt-3 fw-600 {% if result.passed() %}text-success{% else %}text-danger{% endif %}">
+          <i class="bi bi-{{ 'check-circle-fill' if result.passed() else 'x-circle-fill' }} me-1"></i>
+          {{ 'Passed!' if result.passed() else 'Not Passed' }}
+        </p>
+
+        <div class="row g-2 mt-2 text-start">
+          <div class="col-6">
+            <div class="p-3 rounded-3" style="background:rgba(34,197,94,0.1)">
+              <div class="fw-800 text-success fs-4">{{ result.correct_answers }}</div>
+              <div class="text-muted small">Correct</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="p-3 rounded-3" style="background:rgba(239,68,68,0.1)">
+              <div class="fw-800 text-danger fs-4">{{ result.wrong_answers }}</div>
+              <div class="text-muted small">Wrong</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3 small text-start">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-muted">Total Questions</span>
+            <span class="fw-600">{{ result.total_questions }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-muted">Marks Obtained</span>
+            <span class="fw-600">{{ result.marks_obtained|int }}/{{ result.total_questions }}</span>
+          </div>
+          {% if result.time_taken %}
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-muted">Time Taken</span>
+            <span class="fw-600">
+              {{ (result.time_taken // 60) }}m {{ (result.time_taken % 60) }}s
+            </span>
+          </div>
+          {% endif %}
+          <div class="d-flex justify-content-between">
+            <span class="text-muted">Submitted</span>
+            <span class="fw-600">{{ result.submitted_at.strftime('%b %d, %H:%M') }}</span>
+          </div>
+        </div>
+
+        <div class="d-grid gap-2 mt-4">
+          <a href="{{ url_for('student.download_result_pdf', result_id=result.id) }}"
+             class="btn btn-primary">
+            <i class="bi bi-download me-2"></i>Download PDF
+          </a>
+          <a href="{{ url_for('student.start_quiz', quiz_id=result.quiz_id) }}"
+             class="btn btn-outline-primary">
+            <i class="bi bi-arrow-repeat me-2"></i>Retake Quiz
+          </a>
+          <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-house me-2"></i>Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Answer Review -->
+  <div class="col-lg-8 animate-in">
+    <div class="glass-card h-100">
+      <div class="card-header">
+        <i class="bi bi-list-check me-2"></i>Answer Review
+        <span class="badge bg-primary ms-2">{{ result.quiz.title }}</span>
+      </div>
+      <div class="card-body" style="max-height:720px;overflow-y:auto">
+        {% for sa in answers %}
+        {% set q = sa.question %}
+        <div class="answer-item {{ 'correct' if sa.is_correct else 'wrong' }} mb-3">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="fw-700 small text-muted">Q{{ loop.index }}</span>
+            <span class="badge {{ 'bg-success' if sa.is_correct else 'bg-danger' }}">
+              {{ '✓ Correct' if sa.is_correct else '✗ Wrong' }}
+            </span>
+          </div>
+          <p class="fw-600 mb-3">{{ q.question_text }}</p>
+
+          <div class="row g-2 small">
+            {% for letter, text in [('A', q.option_a), ('B', q.option_b), ('C', q.option_c), ('D', q.option_d)] %}
+            <div class="col-md-6">
+              <div class="d-flex align-items-center gap-2 p-2 rounded-2
+                {% if letter == q.correct_answer %}
+                  bg-success bg-opacity-10 border border-success border-opacity-25
+                {% elif sa.selected_answer == letter and not sa.is_correct %}
+                  bg-danger bg-opacity-10 border border-danger border-opacity-25
+                {% endif %}">
+                <span class="fw-700
+                  {% if letter == q.correct_answer %}text-success
+                  {% elif sa.selected_answer == letter and not sa.is_correct %}text-danger
+                  {% else %}text-muted{% endif %}">{{ letter }}</span>
+                <span>{{ text }}</span>
+                {% if letter == q.correct_answer %}
+                <i class="bi bi-check-circle-fill text-success ms-auto"></i>
+                {% elif sa.selected_answer == letter and not sa.is_correct %}
+                <i class="bi bi-x-circle-fill text-danger ms-auto"></i>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          {% if not sa.selected_answer %}
+          <div class="text-muted small mt-2"><i class="bi bi-dash-circle me-1"></i>Not answered</div>
+          {% endif %}
+
+          {% if q.explanation %}
+          <div class="mt-2 p-2 rounded-2 small" style="background:rgba(99,102,241,0.08)">
+            <i class="bi bi-lightbulb me-1 text-warning"></i>{{ q.explanation }}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

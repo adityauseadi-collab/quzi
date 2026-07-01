@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} - QuizMaster Pro{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-7">
+    <div class="glass-card animate-in">
+      <div class="card-header"><i class="bi bi-journal-plus me-2"></i>{{ title }}</div>
+      <div class="card-body">
+        <form method="POST" novalidate>
+          {{ form.hidden_tag() }}
+          <div class="mb-3">
+            {{ form.title.label(class="form-label") }}
+            {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else ""), placeholder="Quiz title") }}
+            {% for e in form.title.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="mb-3">
+            {{ form.description.label(class="form-label") }}
+            {{ form.description(class="form-control", rows=2, placeholder="Optional description...") }}
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              {{ form.category_id.label(class="form-label") }}
+              {{ form.category_id(class="form-select" + (" is-invalid" if form.category_id.errors else ""),
+                 id="category_id", onchange="fetchQCount()") }}
+              {% for e in form.category_id.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+              <div class="form-text" id="qCountHint"></div>
+            </div>
+            <div class="col-md-3">
+              {{ form.num_questions.label(class="form-label") }}
+              {{ form.num_questions(class="form-control" + (" is-invalid" if form.num_questions.errors else "")) }}
+              {% for e in form.num_questions.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="col-md-3">
+              {{ form.time_limit.label(class="form-label") }}
+              {{ form.time_limit(class="form-control") }}
+            </div>
+          </div>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              {{ form.pass_percentage.label(class="form-label") }}
+              {{ form.pass_percentage(class="form-control") }}
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+              <div class="form-check form-switch ms-2 mb-2">
+                {{ form.is_published(class="form-check-input", role="switch") }}
+                <label class="form-check-label fw-600" for="is_published">Publish immediately</label>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-2"></i>Save Quiz</button>
+            <a href="{{ url_for('admin.quizzes') }}" class="btn btn-outline-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+async function fetchQCount() {
+  const catId = document.getElementById('category_id')?.value;
+  const hint  = document.getElementById('qCountHint');
+  if (!catId || !hint) return;
+  try {
+    const res  = await fetch(`/api/quiz/question-count?category_id=${catId}`);
+    const data = await res.json();
+    const n    = data.count || 0;
+    hint.innerHTML = n > 0
+      ? `<span class="text-success"><i class="bi bi-check-circle me-1"></i>${n} questions available</span>`
+      : `<span class="text-danger"><i class="bi bi-exclamation-circle me-1"></i>No questions in this category</span>`;
+    const numQ = document.getElementById('num_questions');
+    if (numQ) numQ.max = n;
+  } catch(e) { /* ignore */ }
+}
+document.addEventListener('DOMContentLoaded', fetchQCount);
+</script>
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Leaderboard - QuizMaster Pro{% endblock %}
+{% block page_title %}Leaderboard{% endblock %}
+{% block content %}
+
+<!-- My Rank Banner -->
+{% if my_rank %}
+<div class="glass-card mb-4 animate-in" style="border:2px solid var(--primary)">
+  <div class="card-body py-3">
+    <div class="d-flex align-items-center gap-3">
+      <div class="rank-badge rank-{{ 'other' if my_rank > 3 else my_rank }}" style="min-width:44px">
+        #{{ my_rank }}
+      </div>
+      <div class="user-avatar" style="border-radius:12px">
+        {{ current_user.full_name[0].upper() if current_user.full_name else current_user.username[0].upper() }}
+      </div>
+      <div class="flex-1">
+        <div class="fw-700">
+          {{ current_user.full_name or current_user.username }}
+          <span class="badge bg-primary ms-1">You</span>
+        </div>
+        <div class="text-muted small">Your current ranking among all students</div>
+      </div>
+      <div class="text-end d-none d-md-block">
+        <div class="fw-800 fs-4 text-primary">{{ current_user.get_average_score() }}%</div>
+        <div class="text-muted small">Avg Score</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="glass-card animate-in">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-trophy-fill text-warning me-2"></i>Top Students</span>
+    <span class="text-muted small">{{ board|length }} students ranked</span>
+  </div>
+  <div class="card-body">
+    {% if board %}
+
+    <!-- Top 3 Podium -->
+    {% if board|length >= 3 %}
+    <div class="row g-3 mb-5 justify-content-center align-items-end">
+      <!-- Silver (#2) -->
+      <div class="col-4 col-md-3 text-center" style="order:1">
+        <div class="user-avatar mx-auto mb-2"
+             style="width:52px;height:52px;border-radius:14px;font-size:1.1rem;
+                    box-shadow:0 0 0 2px var(--border)">
+          {{ board[1].full_name[0].upper() if board[1].full_name else board[1].user.username[0].upper() }}
+        </div>
+        <div class="fw-700 small mb-1 text-truncate px-1">
+          {{ board[1].full_name or board[1].user.username }}
+        </div>
+        <div class="fw-800 text-primary mb-2">{{ board[1].average_score }}%</div>
+        <div class="rank-badge rank-2 mx-auto">#2</div>
+        <div class="text-muted mt-1" style="font-size:0.72rem">{{ board[1].total_quizzes }} quizzes</div>
+      </div>
+
+      <!-- Gold (#1) -->
+      <div class="col-4 col-md-3 text-center" style="order:2">
+        <div style="font-size:1.8rem;line-height:1;margin-bottom:6px">🏆</div>
+        <div class="user-avatar mx-auto mb-2"
+             style="width:72px;height:72px;border-radius:18px;font-size:1.5rem;
+                    box-shadow:0 0 0 3px #f59e0b">
+          {{ board[0].full_name[0].upper() if board[0].full_name else board[0].user.username[0].upper() }}
+        </div>
+        <div class="fw-800 mb-1 text-truncate px-1">
+          {{ board[0].full_name or board[0].user.username }}
+        </div>
+        <div class="fw-800 fs-5 text-primary mb-2">{{ board[0].average_score }}%</div>
+        <div class="rank-badge rank-1 mx-auto">#1</div>
+        <div class="text-muted mt-1" style="font-size:0.72rem">{{ board[0].total_quizzes }} quizzes</div>
+      </div>
+
+      <!-- Bronze (#3) -->
+      <div class="col-4 col-md-3 text-center" style="order:3">
+        <div class="user-avatar mx-auto mb-2"
+             style="width:52px;height:52px;border-radius:14px;font-size:1.1rem;
+                    box-shadow:0 0 0 2px var(--border)">
+          {{ board[2].full_name[0].upper() if board[2].full_name else board[2].user.username[0].upper() }}
+        </div>
+        <div class="fw-700 small mb-1 text-truncate px-1">
+          {{ board[2].full_name or board[2].user.username }}
+        </div>
+        <div class="fw-800 text-primary mb-2">{{ board[2].average_score }}%</div>
+        <div class="rank-badge rank-3 mx-auto">#3</div>
+        <div class="text-muted mt-1" style="font-size:0.72rem">{{ board[2].total_quizzes }} quizzes</div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Full Ranked List -->
+    {% for entry in board %}
+    <div class="leaderboard-row {% if entry.user.id == current_user.id %}my-row{% endif %}">
+      <div class="rank-badge
+        {% if loop.index==1 %}rank-1{% elif loop.index==2 %}rank-2{% elif loop.index==3 %}rank-3{% else %}rank-other{% endif %}">
+        {{ loop.index }}
+      </div>
+      <div class="user-avatar" style="border-radius:10px;flex-shrink:0">
+        {{ entry.full_name[0].upper() if entry.full_name else entry.user.username[0].upper() }}
+      </div>
+      <div class="flex-1">
+        <div class="fw-600">
+          {{ entry.full_name or entry.user.username }}
+          {% if entry.user.id == current_user.id %}
+          <span class="badge bg-primary ms-1" style="font-size:0.65rem">You</span>
+          {% endif %}
+        </div>
+        <div class="text-muted small">
+          {{ entry.total_quizzes }} quiz{{ 'zes' if entry.total_quizzes != 1 else '' }} taken
+        </div>
+      </div>
+      <div class="text-center d-none d-md-block">
+        <div class="text-muted" style="font-size:0.72rem">Best</div>
+        <div class="fw-700 text-success small">{{ entry.best_score }}%</div>
+      </div>
+      <div class="text-end">
+        <div class="text-muted" style="font-size:0.72rem">Average</div>
+        <div class="fw-800 fs-5 text-primary">{{ entry.average_score }}%</div>
+      </div>
+      {% if loop.index == 1 %}<i class="bi bi-trophy-fill text-warning fs-5"></i>
+      {% elif loop.index == 2 %}<i class="bi bi-trophy-fill text-secondary fs-5"></i>
+      {% elif loop.index == 3 %}<i class="bi bi-trophy-fill fs-5" style="color:#fb923c"></i>
+      {% endif %}
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-trophy fs-1 d-block mb-3" style="opacity:0.2"></i>
+      <h5 class="fw-600">No rankings yet</h5>
+      <p class="small">Be the first to take a quiz and claim the top spot!</p>
+      <a href="{{ url_for('student.dashboard') }}" class="btn btn-primary mt-2">
+        <i class="bi bi-play-fill me-2"></i>Take a Quiz
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

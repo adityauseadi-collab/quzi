@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}QuizMaster Pro - Online Quiz Platform{% endblock %}
+{% block public_content %}
+<div class="hero-section animate-in">
+  <div class="container">
+    <h1 class="hero-title">Master Your Knowledge<br>One Quiz at a Time</h1>
+    <p class="hero-sub">A modern platform for creating, managing, and taking quizzes. Designed for educators and students alike.</p>
+    <div class="d-flex gap-3 justify-content-center flex-wrap">
+      <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg px-5">Get Started Free</a>
+      <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-lg px-5">Sign In</a>
+    </div>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="row g-4">
+    <div class="col-md-4 animate-in">
+      <div class="feature-card">
+        <span class="feature-icon">⚡</span>
+        <h4>Instant Quizzes</h4>
+        <p>Take quizzes with real-time timers and instant scoring. Get your results the moment you submit.</p>
+      </div>
+    </div>
+    <div class="col-md-4 animate-in">
+      <div class="feature-card">
+        <span class="feature-icon">📊</span>
+        <h4>Detailed Analytics</h4>
+        <p>Track your performance over time with beautiful charts and detailed breakdown of every answer.</p>
+      </div>
+    </div>
+    <div class="col-md-4 animate-in">
+      <div class="feature-card">
+        <span class="feature-icon">🏆</span>
+        <h4>Leaderboards</h4>
+        <p>Compete with peers and climb the leaderboard. See how you rank against other students.</p>
+      </div>
+    </div>
+    <div class="col-md-4 animate-in">
+      <div class="feature-card">
+        <span class="feature-icon">📁</span>
+        <h4>Bulk Import</h4>
+        <p>Admins can import hundreds of questions at once from Excel or CSV files with validation.</p>
+      </div>
+    </div>
+    <div class="col-md-4 animate-in">
+      <div class="feature-card">
+        <span class="feature-icon">📄</span>
+        <h4>PDF Results</h4>
+        <p>Download your quiz results as a professional PDF report with full answer review.</p>
+      </div>
+    </div>
+    <div class="col-md-4 animate-in">
+      <div class="feature-card">
+        <span class="feature-icon">🌙</span>
+        <h4>Dark Mode</h4>
+        <p>Study comfortably in any lighting condition with our beautiful dark mode interface.</p>
+      </div>
+    </div>
+  </div>
+
+  <!--div class="text-center mt-5">
+    <p class="text-muted mb-2">Demo credentials</p>
+    <code class="me-3">Admin: admin / admin123</code>
+    <code>Student: student / student123</code>
+  </div-->
+</div>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Import Questions - QuizMaster Pro{% endblock %}
+{% block page_title %}Import Questions{% endblock %}
+{% block content %}
+<div class="row g-4 justify-content-center">
+  <div class="col-lg-8">
+    <div class="glass-card animate-in">
+      <div class="card-header"><i class="bi bi-upload me-2"></i>Import from Excel / CSV</div>
+      <div class="card-body">
+        <div class="alert" style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:12px">
+          <h6 class="fw-700 mb-2"><i class="bi bi-info-circle me-2"></i>Required File Format</h6>
+          <p class="small mb-2">Your file must have these columns (exact names):</p>
+          <code class="d-block mb-2">Question | OptionA | OptionB | OptionC | OptionD | CorrectAnswer | Category | Difficulty | Explanation</code>
+          <p class="small mb-0">CorrectAnswer must be <strong>A</strong>, <strong>B</strong>, <strong>C</strong>, or <strong>D</strong>. Category, Difficulty, and Explanation are optional.</p>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" novalidate class="mt-4">
+          {{ form.hidden_tag() }}
+
+          <div class="dropzone mb-4" onclick="document.getElementById('file').click()">
+            <input type="file" name="file" id="file" accept=".xlsx,.csv" class="d-none" id="fileInput" onchange="updateLabel(this)">
+            <i class="bi bi-cloud-upload fs-2 text-primary d-block mb-2"></i>
+            <p class="fw-600 mb-1" id="fileLabel">Click to upload or drag & drop</p>
+            <p class="text-muted small">.xlsx or .csv files only</p>
+            {% for e in form.file.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+          </div>
+
+          <div class="mb-4">
+            {{ form.category_id.label(class="form-label") }}
+            {{ form.category_id(class="form-select") }}
+            <div class="form-text">Used when the file doesn't specify a category column.</div>
+          </div>
+
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-upload me-2"></i>Import Questions
+          </button>
+          <a href="{{ url_for('admin.questions') }}" class="btn btn-outline-secondary ms-2">Cancel</a>
+        </form>
+      </div>
+    </div>
+
+    {% if result %}
+    <div class="glass-card animate-in mt-4">
+      <div class="card-header">
+        <i class="bi bi-{{ 'check-circle text-success' if result.success else 'x-circle text-danger' }} me-2"></i>
+        Import Summary
+      </div>
+      <div class="card-body">
+        {% if result.success %}
+        <div class="row g-3 mb-4">
+          <div class="col-4 text-center">
+            <div class="stat-value text-success">{{ result.imported }}</div>
+            <div class="stat-label">Imported</div>
+          </div>
+          <div class="col-4 text-center">
+            <div class="stat-value text-warning">{{ result.get('duplicates', 0) }}</div>
+            <div class="stat-label">Duplicates Skipped</div>
+          </div>
+          <div class="col-4 text-center">
+            <div class="stat-value text-danger">{{ result.errors|length }}</div>
+            <div class="stat-label">Errors</div>
+          </div>
+        </div>
+        {% else %}
+        <div class="alert alert-danger">{{ result.error }}</div>
+        {% endif %}
+
+        {% if result.errors %}
+        <h6 class="fw-700 mb-2">Row Errors:</h6>
+        <div class="small" style="max-height:200px;overflow-y:auto">
+          {% for e in result.errors %}
+          <div class="text-danger mb-1"><i class="bi bi-x me-1"></i>{{ e }}</div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Sample Download -->
+    <div class="glass-card animate-in mt-4">
+      <div class="card-body text-center py-4">
+        <i class="bi bi-file-earmark-excel fs-2 text-success d-block mb-2"></i>
+        <h6 class="fw-700 mb-1">Need a template?</h6>
+        <p class="text-muted small mb-3">Download a sample Excel file with the correct format.</p>
+        <a href="{{ url_for('static', filename='sample_questions.xlsx') }}" class="btn btn-outline-success btn-sm">
+          <i class="bi bi-download me-2"></i>Download Sample
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function updateLabel(input) {
+  const label = document.getElementById('fileLabel');
+  if (input.files[0]) {
+    label.textContent = input.files[0].name;
+    label.style.color = 'var(--primary)';
+  }
+}
+const dz = document.querySelector('.dropzone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const fi = document.getElementById('fileInput');
+  fi.files = e.dataTransfer.files;
+  updateLabel(fi);
+});
+</script>
+{% endblock %}

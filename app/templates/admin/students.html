@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Students - QuizMaster Pro{% endblock %}
+{% block page_title %}Student Management{% endblock %}
+{% block content %}
+<div class="glass-card animate-in">
+  <div class="card-header"><i class="bi bi-people me-2"></i>All Students ({{ students|length }})</div>
+  <div class="card-body p-0">
+    <table class="table-glass w-100">
+      <thead><tr>
+        <th>Student</th><th>Email</th><th>Quizzes</th><th>Avg Score</th><th>Joined</th><th>Status</th><th>Action</th>
+      </tr></thead>
+      <tbody>
+        {% for s in students %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="user-avatar" style="width:32px;height:32px;border-radius:8px;font-size:0.8rem">
+                {{ s.username[0].upper() }}
+              </div>
+              <div>
+                <div class="fw-600 small">{{ s.full_name or s.username }}</div>
+                <div class="text-muted" style="font-size:0.72rem">@{{ s.username }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="text-muted small">{{ s.email }}</td>
+          <td class="text-center">{{ s.get_total_quizzes() }}</td>
+          <td>
+            {% set avg = s.get_average_score() %}
+            <span class="fw-600 {% if avg >= 70 %}text-success{% elif avg >= 50 %}text-warning{% else %}text-danger{% endif %}">
+              {{ avg }}%
+            </span>
+          </td>
+          <td class="text-muted small">{{ s.created_at.strftime('%b %d, %Y') }}</td>
+          <td>
+            <span class="badge {% if s.is_active %}bg-success{% else %}bg-danger{% endif %}">
+              {{ 'Active' if s.is_active else 'Disabled' }}
+            </span>
+          </td>
+            <td>
+              <div class="d-flex gap-1">
+                <a href="{{ url_for('admin.student_detail', student_id=s.id) }}" class="btn btn-icon" title="View Detail">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <form method="POST" action="{{ url_for('admin.toggle_student', student_id=s.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-icon" title="{{ 'Disable' if s.is_active else 'Activate' }}">
+                    <i class="bi bi-person-{{ 'dash text-danger' if s.is_active else 'check text-success' }}"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-center text-muted py-5">No students registered yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

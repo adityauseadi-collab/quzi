@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}{{ student.full_name or student.username }} - QuizMaster Pro{% endblock %}
+{% block page_title %}Student: {{ student.full_name or student.username }}{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <!-- Profile card -->
+  <div class="col-lg-4 animate-in">
+    <div class="glass-card text-center p-4">
+      <div class="user-avatar mx-auto mb-3" style="width:80px;height:80px;font-size:2rem;border-radius:20px;">
+        {{ student.full_name[0].upper() if student.full_name else student.username[0].upper() }}
+      </div>
+      <h5 class="fw-700 mb-1">{{ student.full_name or student.username }}</h5>
+      <p class="text-muted small mb-1">@{{ student.username }}</p>
+      <p class="text-muted small mb-2">{{ student.email }}</p>
+      <span class="badge {{ 'bg-success' if student.is_active else 'bg-danger' }}">
+        {{ 'Active' if student.is_active else 'Disabled' }}
+      </span>
+      <hr>
+      <div class="row g-3 text-center mt-1">
+        <div class="col-4">
+          <div class="fw-800 fs-4 text-primary">{{ student.get_total_quizzes() }}</div>
+          <div class="text-muted" style="font-size:0.72rem">Quizzes</div>
+        </div>
+        <div class="col-4">
+          <div class="fw-800 fs-4 text-success">{{ student.get_average_score() }}%</div>
+          <div class="text-muted" style="font-size:0.72rem">Avg Score</div>
+        </div>
+        <div class="col-4">
+          <div class="fw-800 fs-4 text-warning">{{ results|selectattr('grade','equalto','A+')|list|length }}</div>
+          <div class="text-muted" style="font-size:0.72rem">A+ Grades</div>
+        </div>
+      </div>
+      <hr>
+      <div class="text-start small">
+        <div class="d-flex justify-content-between mb-1">
+          <span class="text-muted">Joined</span>
+          <span>{{ student.created_at.strftime('%b %d, %Y') }}</span>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span class="text-muted">Last Login</span>
+          <span>{{ student.last_login | time_ago if student.last_login else 'Never' }}</span>
+        </div>
+      </div>
+      <div class="mt-3">
+        <form method="POST" action="{{ url_for('admin.toggle_student', student_id=student.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-sm w-100 {{ 'btn-danger' if student.is_active else 'btn-success' }}">
+            <i class="bi bi-person-{{ 'dash' if student.is_active else 'check' }} me-1"></i>
+            {{ 'Disable Account' if student.is_active else 'Enable Account' }}
+          </button>
+        </form>
+        <a href="{{ url_for('admin.students') }}" class="btn btn-outline-secondary btn-sm w-100 mt-2">
+          <i class="bi bi-arrow-left me-1"></i>Back to Students
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quiz history -->
+  <div class="col-lg-8 animate-in">
+    {% if results %}
+    <!-- Mini progress chart -->
+    <div class="glass-card mb-4">
+      <div class="card-header"><i class="bi bi-graph-up me-2"></i>Performance History</div>
+      <div class="card-body">
+        <div class="chart-container" style="height:200px">
+          <canvas id="studentChart"></canvas>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="glass-card">
+      <div class="card-header"><i class="bi bi-clock-history me-2"></i>Quiz Results ({{ results|length }})</div>
+      <div class="card-body p-0">
+        {% if results %}
+        <table class="table-glass w-100">
+          <thead><tr>
+            <th>Quiz</th><th>Score</th><th>Grade</th><th>Correct</th><th>Time</th><th>Date</th><th></th>
+          </tr></thead>
+          <tbody>
+            {% for r in results %}
+            <tr>
+              <td class="small fw-500">{{ r.quiz.title|truncate(28) }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="progress" style="width:60px;height:5px">
+                    <div class="progress-bar {{ r.percentage|pct_bar }}" style="width:{{ r.percentage }}%"></div>
+                  </div>
+                  <span class="fw-700 small {% if r.percentage>=70 %}text-success{% elif r.percentage>=50 %}text-warning{% else %}text-danger{% endif %}">
+                    {{ r.percentage|round(1) }}%
+                  </span>
+                </div>
+              </td>
+              <td><span class="badge badge-grade grade-{{ r.grade }}">{{ r.grade }}</span></td>
+              <td class="text-center small">{{ r.correct_answers }}/{{ r.total_questions }}</td>
+              <td class="text-muted small">{{ r.time_taken|duration if r.time_taken else '—' }}</td>
+              <td class="text-muted small">{{ r.submitted_at|time_ago }}</td>
+              <td>
+                <a href="{{ url_for('admin.view_result', result_id=r.id) }}" class="btn btn-icon" title="View">
+                  <i class="bi bi-eye"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-journal-x fs-2 d-block mb-2" style="opacity:0.3"></i>
+          This student hasn't taken any quizzes yet.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if results %}
+<script>
+const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+const textColor = isDark ? '#94a3b8' : '#64748b';
+const labels  = {{ results|map(attribute='quiz')|map(attribute='title')|list|tojson }};
+const scores  = {{ results|map(attribute='percentage')|list|tojson }};
+new Chart(document.getElementById('studentChart'), {
+  type: 'line',
+  data: {
+    labels: labels.map(l => l.substring(0,18)),
+    datasets: [{
+      label: 'Score %',
+      data: scores,
+      borderColor: '#6366f1',
+      backgroundColor: 'rgba(99,102,241,0.12)',
+      tension: 0.4, fill: true,
+      pointBackgroundColor: '#6366f1', pointRadius: 5,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: textColor, maxRotation: 30 }, grid: { display: false } },
+      y: { min: 0, max: 100, ticks: { color: textColor }, grid: { color: 'rgba(99,102,241,0.1)' } }
+    }
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

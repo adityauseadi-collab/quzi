@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}My Results - QuizMaster Pro{% endblock %}
+{% block page_title %}My Results{% endblock %}
+{% block content %}
+
+{% if results %}
+<!-- Summary Stats -->
+<div class="row g-4 mb-4">
+  {% set total  = results|length %}
+  {% set avg    = (results|map(attribute='percentage')|sum / total)|round(1) %}
+  {% set best   = results|map(attribute='percentage')|max|round(1) %}
+  {% set passed = results|selectattr('percentage','ge', 50)|list|length %}
+  <div class="col-6 col-md-3 animate-in">
+    <div class="stat-card primary">
+      <div class="stat-icon primary"><i class="bi bi-journal-check"></i></div>
+      <div class="stat-value">{{ total }}</div>
+      <div class="stat-label">Total Attempts</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 animate-in">
+    <div class="stat-card success">
+      <div class="stat-icon success"><i class="bi bi-percent"></i></div>
+      <div class="stat-value">{{ avg }}%</div>
+      <div class="stat-label">Average Score</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 animate-in">
+    <div class="stat-card info">
+      <div class="stat-icon info"><i class="bi bi-star-fill"></i></div>
+      <div class="stat-value">{{ best }}%</div>
+      <div class="stat-label">Best Score</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 animate-in">
+    <div class="stat-card warning">
+      <div class="stat-icon warning"><i class="bi bi-check2-circle"></i></div>
+      <div class="stat-value">{{ passed }}/{{ total }}</div>
+      <div class="stat-label">Quizzes Passed</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="glass-card animate-in">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span><i class="bi bi-clock-history me-2"></i>All Results ({{ results|length }})</span>
+    {% if results %}
+    <div class="d-flex gap-2 align-items-center">
+      <input type="text" id="historySearch" class="form-control form-control-sm"
+             placeholder="Search by quiz name..." style="width:200px">
+      <select id="gradeFilter" class="form-select form-select-sm" style="width:auto">
+        <option value="">All Grades</option>
+        {% for g in ['A+','A','B','C','D','F'] %}
+        <option value="{{ g }}">{{ g }}</option>
+        {% endfor %}
+      </select>
+      <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-house me-1"></i>Dashboard
+      </a>
+    </div>
+    {% endif %}
+  </div>
+  <div class="card-body p-0">
+    {% if results %}
+    <div class="table-responsive">
+      <table class="table-glass w-100" id="historyTable">
+        <thead>
+          <tr>
+            <th>Quiz</th>
+            <th>Category</th>
+            <th>Score</th>
+            <th>Grade</th>
+            <th>Correct</th>
+            <th>Wrong</th>
+            <th>Time</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in results %}
+          <tr class="history-row"
+              data-quiz="{{ r.quiz.title|lower }}"
+              data-grade="{{ r.grade }}">
+            <td class="fw-600">{{ r.quiz.title|truncate(28) }}</td>
+            <td>
+              <span class="badge"
+                    style="background:{{ r.quiz.category.color }}20;color:{{ r.quiz.category.color }}">
+                {{ r.quiz.category.name }}
+              </span>
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="progress" style="width:65px;height:6px">
+                  <div class="progress-bar {{ r.percentage|pct_bar }}"
+                       style="width:{{ r.percentage }}%"></div>
+                </div>
+                <span class="fw-700 small
+                  {% if r.percentage>=70 %}text-success
+                  {% elif r.percentage>=50 %}text-warning
+                  {% else %}text-danger{% endif %}">
+                  {{ r.percentage|round(1) }}%
+                </span>
+              </div>
+            </td>
+            <td><span class="badge badge-grade grade-{{ r.grade }}">{{ r.grade }}</span></td>
+            <td class="text-success fw-600">{{ r.correct_answers }}</td>
+            <td class="text-danger fw-600">{{ r.wrong_answers }}</td>
+            <td class="text-muted small">
+              {{ r.time_taken|duration if r.time_taken else '—' }}
+            </td>
+            <td class="text-muted small">{{ r.submitted_at.strftime('%b %d, %Y') }}</td>
+            <td>
+              <div class="d-flex gap-1">
+                <a href="{{ url_for('student.result', result_id=r.id) }}"
+                   class="btn btn-icon" title="View Result">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{{ url_for('student.download_result_pdf', result_id=r.id) }}"
+                   class="btn btn-icon" title="Download PDF">
+                  <i class="bi bi-download"></i>
+                </a>
+                <a href="{{ url_for('student.start_quiz', quiz_id=r.quiz_id) }}"
+                   class="btn btn-icon" title="Retake Quiz">
+                  <i class="bi bi-arrow-repeat"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div id="historyNoResults" class="text-center py-4 text-muted d-none">
+      <i class="bi bi-search fs-3 d-block mb-2"></i>No results match your filter.
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-journal-x fs-1 d-block mb-3" style="opacity:0.3"></i>
+      <h5 class="fw-600">No results yet</h5>
+      <p class="small mb-4">Take your first quiz to see your results here.</p>
+      <a href="{{ url_for('student.dashboard') }}" class="btn btn-primary">
+        <i class="bi bi-play-fill me-2"></i>Take a Quiz
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if results %}
+<script>
+function filterHistory() {
+  const search = document.getElementById('historySearch').value.toLowerCase();
+  const grade  = document.getElementById('gradeFilter').value;
+  const rows   = document.querySelectorAll('.history-row');
+  let visible  = 0;
+
+  rows.forEach(row => {
+    const matchQuiz  = !search || row.dataset.quiz.includes(search);
+    const matchGrade = !grade  || row.dataset.grade === grade;
+    row.style.display = (matchQuiz && matchGrade) ? '' : 'none';
+    if (matchQuiz && matchGrade) visible++;
+  });
+
+  document.getElementById('historyNoResults').classList.toggle('d-none', visible > 0);
+}
+
+document.getElementById('historySearch')?.addEventListener('input', filterHistory);
+document.getElementById('gradeFilter')?.addEventListener('change', filterHistory);
+</script>
+{% endif %}
+{% endblock %}

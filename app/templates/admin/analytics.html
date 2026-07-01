@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}Analytics - QuizMaster Pro{% endblock %}
+{% block page_title %}Analytics{% endblock %}
+{% block content %}
+
+<!-- KPI Cards -->
+<div class="row g-4 mb-4">
+  <div class="col-6 col-xl-3 animate-in">
+    <div class="stat-card primary">
+      <div class="stat-icon primary"><i class="bi bi-people-fill"></i></div>
+      <div class="stat-value">{{ analytics.total_students }}</div>
+      <div class="stat-label">Total Students</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3 animate-in">
+    <div class="stat-card success">
+      <div class="stat-icon success"><i class="bi bi-question-circle-fill"></i></div>
+      <div class="stat-value">{{ analytics.total_questions }}</div>
+      <div class="stat-label">Total Questions</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3 animate-in">
+    <div class="stat-card warning">
+      <div class="stat-icon warning"><i class="bi bi-journal-check"></i></div>
+      <div class="stat-value">{{ analytics.total_quizzes_taken }}</div>
+      <div class="stat-label">Total Attempts</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3 animate-in">
+    <div class="stat-card info">
+      <div class="stat-icon info"><i class="bi bi-percent"></i></div>
+      <div class="stat-value">{{ analytics.avg_score }}%</div>
+      <div class="stat-label">Platform Avg Score</div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart Row -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-7 animate-in">
+    <div class="glass-card h-100">
+      <div class="card-header"><i class="bi bi-graph-up me-2"></i>Monthly Quiz Activity</div>
+      <div class="card-body">
+        <div class="chart-container" style="height:300px">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5 animate-in">
+    <div class="glass-card h-100">
+      <div class="card-header"><i class="bi bi-bar-chart me-2"></i>Category Avg Scores</div>
+      <div class="card-body">
+        <div class="chart-container" style="height:300px">
+          <canvas id="catChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Most Difficult Questions -->
+<div class="glass-card animate-in mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-exclamation-triangle me-2"></i>Most Difficult Questions</span>
+    <span class="badge bg-danger">Top 5 by Wrong-Answer Rate</span>
+  </div>
+  <div class="card-body p-0">
+    <table class="table-glass w-100">
+      <thead><tr>
+        <th>Question</th><th>Category</th><th>Difficulty</th>
+        <th>Times Answered</th><th>Wrong Rate</th>
+      </tr></thead>
+      <tbody>
+        {% for q, total, wrong in analytics.difficult_questions %}
+        {% set pct = ((wrong / total) * 100)|round(1) if total else 0 %}
+        <tr>
+          <td style="max-width:380px">
+            <div class="small fw-500">{{ q.question_text|truncate(90) }}</div>
+          </td>
+          <td>
+            <span class="badge"
+                  style="background:{{ q.category.color }}20;color:{{ q.category.color }}">
+              {{ q.category.name }}
+            </span>
+          </td>
+          <td>
+            <span class="badge
+              {% if q.difficulty=='easy' %}bg-success
+              {% elif q.difficulty=='medium' %}bg-warning
+              {% else %}bg-danger{% endif %}">
+              {{ q.difficulty|capitalize }}
+            </span>
+          </td>
+          <td class="text-center">{{ total }}</td>
+          <td style="min-width:180px">
+            <div class="d-flex align-items-center gap-2">
+              <div class="progress flex-1" style="height:7px">
+                <div class="progress-bar bg-danger" style="width:{{ pct }}%"></div>
+              </div>
+              <span class="fw-700 text-danger small">{{ pct }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">
+          No quiz attempts yet — data will appear once students take quizzes.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Category Performance Detail -->
+{% if analytics.cat_stats %}
+<div class="glass-card animate-in">
+  <div class="card-header"><i class="bi bi-tags me-2"></i>Category Performance Summary</div>
+  <div class="card-body p-0">
+    <table class="table-glass w-100">
+      <thead><tr><th>Category</th><th>Average Score</th><th>Performance Bar</th></tr></thead>
+      <tbody>
+        {% for cat in analytics.cat_stats %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div style="width:12px;height:12px;border-radius:3px;background:{{ cat.color }};flex-shrink:0"></div>
+              <span class="fw-500">{{ cat.name }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="fw-700 {% if cat.avg>=70 %}text-success{% elif cat.avg>=50 %}text-warning{% else %}text-danger{% endif %}">
+              {{ cat.avg }}%
+            </span>
+          </td>
+          <td style="min-width:200px">
+            <div class="progress" style="height:8px">
+              <div class="progress-bar" style="width:{{ cat.avg }}%;background:{{ cat.color }}"></div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const isDark    = document.documentElement.getAttribute('data-theme') === 'dark';
+const textColor = isDark ? '#94a3b8' : '#64748b';
+const gridColor = 'rgba(99,102,241,0.08)';
+
+const monthly = {{ analytics.monthly | tojson }};
+new Chart(document.getElementById('trendChart'), {
+  type: 'bar',
+  data: {
+    labels: monthly.map(m => m[0]),
+    datasets: [
+      { label: 'Attempts', data: monthly.map(m => m[1]),
+        backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 6 },
+      { label: 'Avg %', data: monthly.map(m => m[2] ? Math.round(m[2]) : 0),
+        type: 'line', borderColor: '#06b6d4', backgroundColor: 'transparent',
+        tension: 0.4, pointBackgroundColor: '#06b6d4', yAxisID: 'y2' }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: textColor } } },
+    scales: {
+      x:  { ticks: { color: textColor }, grid: { color: gridColor } },
+      y:  { ticks: { color: textColor }, grid: { color: gridColor } },
+      y2: { position: 'right', max: 100, ticks: { color: textColor }, grid: { display: false } }
+    }
+  }
+});
+
+const cats = {{ analytics.cat_stats | tojson }};
+new Chart(document.getElementById('catChart'), {
+  type: 'bar',
+  data: {
+    labels: cats.map(c => c.name),
+    datasets: [{
+      label: 'Avg Score %', data: cats.map(c => c.avg),
+      backgroundColor: cats.map(c => c.color + 'cc'),
+      borderColor: cats.map(c => c.color),
+      borderWidth: 2, borderRadius: 6,
+    }]
+  },
+  options: {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: textColor }, grid: { color: gridColor }, max: 100 },
+      y: { ticks: { color: textColor }, grid: { display: false } }
+    }
+  }
+});
+</script>
+{% endblock %}

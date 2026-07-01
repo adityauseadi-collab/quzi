@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Questions - QuizMaster Pro{% endblock %}
+{% block page_title %}Question Bank{% endblock %}
+{% block content %}
+
+<div class="d-flex gap-3 mb-4 flex-wrap align-items-center">
+  <a href="{{ url_for('admin.add_question') }}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-2"></i>Add Question
+  </a>
+  <a href="{{ url_for('admin.import_questions') }}" class="btn btn-outline-primary">
+    <i class="bi bi-upload me-2"></i>Import Excel/CSV
+  </a>
+  <a href="{{ url_for('admin.export_questions', category=current_category) }}"
+     class="btn btn-outline-success">
+    <i class="bi bi-download me-2"></i>Export CSV
+  </a>
+
+  <form method="GET" class="d-flex gap-2 flex-wrap ms-auto">
+    <select name="category" class="form-select" style="width:auto" onchange="this.form.submit()">
+      <option value="0">All Categories</option>
+      {% for cat in categories %}
+      <option value="{{ cat.id }}" {% if cat.id == current_category %}selected{% endif %}>{{ cat.name }}</option>
+      {% endfor %}
+    </select>
+    <div class="input-group" style="width:260px">
+      <input type="text" name="q" class="form-control" placeholder="Search questions..." value="{{ search }}">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i></button>
+    </div>
+  </form>
+</div>
+
+<div class="glass-card animate-in">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-question-circle me-2"></i>Questions ({{ questions.total }})</span>
+    {% if search or current_category %}
+    <a href="{{ url_for('admin.questions') }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-x me-1"></i>Clear Filter
+    </a>
+    {% endif %}
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table-glass w-100">
+        <thead><tr>
+          <th>#</th><th style="width:40%">Question</th><th>Category</th>
+          <th>Difficulty</th><th>Correct</th><th>Actions</th>
+        </tr></thead>
+        <tbody>
+          {% for q in questions.items %}
+          <tr>
+            <td class="text-muted small">{{ q.id }}</td>
+            <td>
+              <div class="fw-500" style="max-width:350px">{{ q.question_text|truncate(80) }}</div>
+            </td>
+            <td>
+              <span class="badge" style="background:{{ q.category.color }}20;color:{{ q.category.color }}">
+                {{ q.category.name }}
+              </span>
+            </td>
+            <td>
+              <span class="badge {% if q.difficulty == 'easy' %}bg-success{% elif q.difficulty == 'medium' %}bg-warning{% else %}bg-danger{% endif %}">
+                {{ q.difficulty|capitalize }}
+              </span>
+            </td>
+            <td>
+              <span class="fw-600 text-success">{{ q.correct_answer }}</span>
+            </td>
+            <td>
+              <div class="d-flex gap-2">
+                <a href="{{ url_for('admin.edit_question', q_id=q.id) }}" class="btn btn-icon" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <form method="POST" action="{{ url_for('admin.delete_question', q_id=q.id) }}" class="d-inline">
+                  {{ csrf_token() if csrf_token is defined }}
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-icon text-danger" title="Delete"
+                    data-confirm="Delete this question?">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="text-center text-muted py-5">
+            <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+            No questions found. <a href="{{ url_for('admin.add_question') }}">Add one!</a>
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if questions.pages > 1 %}
+    <div class="d-flex justify-content-center py-4">
+      <nav>
+        <ul class="pagination mb-0">
+          {% if questions.has_prev %}
+          <li class="page-item">
+            <a class="page-link" href="{{ url_for('admin.questions', page=questions.prev_num, category=current_category, q=search) }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          </li>
+          {% endif %}
+          {% for p in questions.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if p %}
+            <li class="page-item {% if p == questions.page %}active{% endif %}">
+              <a class="page-link" href="{{ url_for('admin.questions', page=p, category=current_category, q=search) }}">{{ p }}</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+          {% endfor %}
+          {% if questions.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="{{ url_for('admin.questions', page=questions.next_num, category=current_category, q=search) }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

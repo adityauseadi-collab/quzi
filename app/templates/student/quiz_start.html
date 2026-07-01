@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} - QuizMaster Pro{% endblock %}
+{% block page_title %}{{ quiz.title }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="glass-card animate-in text-center">
+      <div class="card-body py-5">
+        <div class="mb-4">
+          <span class="badge fs-6 mb-3" style="background:{{ quiz.category.color }}20;color:{{ quiz.category.color }}">
+            {{ quiz.category.name }}
+          </span>
+          <h2 class="fw-800 mb-2">{{ quiz.title }}</h2>
+          {% if quiz.description %}
+          <p class="text-muted">{{ quiz.description }}</p>
+          {% endif %}
+        </div>
+
+        <div class="row g-3 mb-5">
+          <div class="col-4">
+            <div class="stat-card success text-center">
+              <div class="stat-icon success mx-auto"><i class="bi bi-question-circle-fill"></i></div>
+              <div class="stat-value">{{ questions|length }}</div>
+              <div class="stat-label">Questions</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="stat-card warning text-center">
+              <div class="stat-icon warning mx-auto"><i class="bi bi-clock-fill"></i></div>
+              <div class="stat-value">{{ quiz.time_limit }}</div>
+              <div class="stat-label">Minutes</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="stat-card primary text-center">
+              <div class="stat-icon primary mx-auto"><i class="bi bi-award-fill"></i></div>
+              <div class="stat-value">{{ quiz.pass_percentage|int }}%</div>
+              <div class="stat-label">Pass Mark</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:12px;text-align:left">
+          <ul class="mb-0 small">
+            <li>Each correct answer is worth <strong>1 mark</strong>.</li>
+            <li>The timer starts when you click Start.</li>
+            <li>The quiz auto-submits when time runs out.</li>
+            <li>You can navigate between questions freely.</li>
+          </ul>
+        </div>
+
+        <a href="{{ url_for('student.take_quiz', quiz_id=quiz.id) }}" class="btn btn-primary btn-lg px-5 mt-4">
+          <i class="bi bi-play-fill me-2"></i>Start Quiz
+        </a>
+        <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary btn-lg px-4 mt-4 ms-2">Cancel</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
